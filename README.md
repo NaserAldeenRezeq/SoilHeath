@@ -1,5 +1,3 @@
----
-
 # 🌱 Soil Health AI Assistant
 
 > **Your AI-Powered Soil Intelligence Lab**
@@ -206,6 +204,3 @@ This project is open-source under the **[MIT License](LICENSE)**.
 
 > “Coding with the precision of a surgeon and the soul of a poet.”
 > Made with ☕, 🌙 nights, and Manjaro Linux.
-
----# SoilHeath
-# SoilHeath
