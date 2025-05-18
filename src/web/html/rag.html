@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SoilBot 🌱🍅</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background-color: #f8fbf8; /* soft natural white with green undertone */
+      color: #3a4a3a; /* deep forest text color */
+      margin: 0;
+      padding: 0;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 40px auto;
+      background-color: white;
+      border-radius: 12px;
+      padding: 32px;
+      box-shadow: 0 4px 12px rgba(82, 116, 56, 0.08);
+      border: 1px solid #e0e8e0;
+    }
+
+    h1 {
+      text-align: center;
+      color: #5a8f6a; /* deep natural green */
+      margin-bottom: 24px;
+      font-size: 26px;
+      font-weight: 500;
+    }
+
+    h1::after {
+      content: " 🌿";
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    label {
+      font-weight: 500;
+      color: #5a8f6a;
+      font-size: 15px;
+    }
+
+    input {
+      padding: 12px;
+      border: 1px solid #d0e0d0;
+      border-radius: 6px;
+      background-color: #f9fcf9;
+      color: #3a4a3a;
+      font-size: 15px;
+      transition: border-color 0.2s;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #5a8f6a;
+    }
+
+    button {
+      background-color: #6a8d6a;
+      color: white;
+      border: none;
+      padding: 12px;
+      margin-top: 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 15px;
+      transition: all 0.2s;
+    }
+
+    button:hover {
+      background-color: #5a7c5a;
+    }
+
+    .results-container {
+      margin-top: 32px;
+      padding: 20px;
+      background-color: #f8fbf8;
+      border-radius: 8px;
+      border: 1px solid #e0e8e0;
+    }
+
+    .result-item {
+      padding: 12px 0;
+      border-bottom: 1px solid #e0e8e0;
+    }
+
+    .result-item:last-child {
+      border-bottom: none;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 40px;
+      font-size: 14px;
+      color: #8d6e63;
+    }
+</style>
+</head>
+<body>
+  <div class="container">
+    <h1>SoilBot Assistant</h1>
+    <form id="ragForm">
+      <label for="query">What would you like to ask about your soil?</label>
+      <input type="text" id="query" name="query" required placeholder="e.g. Best crop for sandy soil" />
+
+      <label for="top_k">Top K results:</label>
+      <input type="number" id="top_k" name="top_k" value="3" min="1" />
+
+      <label for="score_threshold">Score Threshold (0–1):</label>
+      <input type="number" id="score_threshold" name="score_threshold" value="0.5" step="0.01" min="0" max="1" />
+
+      <button type="submit">🔍 Search Soil Knowledge</button>
+    </form>
+
+    <div id="results" class="results-container"></div>
+  </div>
+
+  <div class="footer">
+    🌱 Cultivating answers for greener harvests © 2025
+  </div>
+
+  <script>
+document.getElementById("ragForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const query = document.getElementById("query").value.trim();
+  const top_k = parseInt(document.getElementById("top_k").value);
+  const score_threshold = parseFloat(document.getElementById("score_threshold").value);
+
+  const resultsDiv = document.getElementById("results");
+  resultsDiv.innerHTML = "🌾 Cultivating results...";
+
+  const authToken = localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
+
+  try {
+    const headers = {
+      "Content-Type": "application/json",
+    };
+    if (authToken) {
+      headers["Authorization"] = `Bearer ${authToken}`;
+    }
+
+    const response = await fetch("/api/live_rag", {
+      method: "POST",
+      headers: headers,
+      body: JSON.stringify({ query, top_k, score_threshold }),
+    });
+
+    const data = await response.json();
+
+    if (response.status === 200) {
+      const results = data["Retriever Results"];
+      resultsDiv.innerHTML = `<h2>🍀 Here’s what the soil says:</h2>`;
+
+      results.forEach((doc) => {
+        const div = document.createElement("div");
+        div.className = "result-item";
+
+        const score = typeof doc.score === "number" ? doc.score.toFixed(3) : "N/A";
+        const id = doc.id || "Unknown ID";
+        const content = doc.text?.trim() || "(No content available)";
+
+        div.innerHTML = `
+          <p>🧪 <strong>Score:</strong> ${score}</p>
+          <p>📄 <strong>ID:</strong> ${id}</p>
+          <p>🌱 <strong>Content:</strong><br>${content}</p>
+        `;
+
+        resultsDiv.appendChild(div);
+      });
+
+    } else {
+      resultsDiv.innerHTML = `<p>🚜 ${data.message || "Something went wrong on the farm."}</p>`;
+    }
+  } catch (err) {
+    resultsDiv.innerHTML = `<p>🐞 Error: ${err.message}</p>`;
+  }
+});
+  </script>
+</body>
+</html>

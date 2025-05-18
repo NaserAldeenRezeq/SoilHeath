@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>🌱 Hello from AgriBot!</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #f0f5e9;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 100px;
+        }
+
+        .container {
+            background: #ffffff;
+            padding: 25px 35px;
+            border-radius: 16px;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+            border: 2px solid #81c784;
+            text-align: center;
+            width: 400px;
+        }
+
+        h1 {
+            color: #388e3c;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .response {
+            margin-top: 20px;
+            font-size: 16px;
+            color: #4e342e;
+            background-color: #f1f8e9;
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid #aed581;
+            white-space: pre-wrap;
+        }
+
+        button {
+            background-color: #66bb6a;
+            color: white;
+            border: none;
+            padding: 12px 22px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #558b2f;
+        }
+
+        .emoji {
+            font-size: 24px;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><span class="emoji">🌾</span>Fetch SoilBot Info<span class="emoji">🧑‍🌾</span></h1>
+        <button onclick="fetchAppInfo()">🌱 Get Info</button>
+        <div class="response" id="response"></div>
+    </div>
+
+    <script>
+        let authToken = null;
+
+        async function handleLoginSuccess(token) {
+            authToken = token;
+            await fetchAppInfo();
+        }
+
+        async function fetchAppInfo() {
+            try {
+                const headers = {};
+                if (authToken) {
+                    headers['Authorization'] = `Bearer ${authToken}`;
+                }
+
+                const response = await fetch('/api/hello', {
+                    headers: headers
+                });
+
+                const output = document.getElementById('response');
+
+                if (response.status === 401) {
+                    output.innerHTML = `
+                        ❌ <strong>Session expired</strong>. Please log in again 🌐
+                    `;
+                    return;
+                }
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                output.innerHTML = `
+                    🌿 <strong>App Name:</strong> ${data["App Name"]}<br>
+                    🌻 <strong>Version:</strong> ${data["Version"]}<br>
+                    🌼 <strong>Message:</strong> ${data["Message"]}
+                `;
+            } catch (error) {
+                document.getElementById('response').innerHTML = `
+                    ❌ <strong>Error fetching data:</strong> ${error.message}
+                `;
+                console.error("Fetch error:", error);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+            if (savedToken) {
+                authToken = savedToken;
+                fetchAppInfo();
+            }
+        });
+    </script>
+</body>
+</html>

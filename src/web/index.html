@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FarmAssistant Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f8f9fa;
+      color: #3a4a3f;
+      line-height: 1.6;
+    }
+
+    .layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      width: 240px;
+      background-color: #ffffff;
+      border-right: 1px solid #e0e6e2;
+      display: flex;
+      flex-direction: column;
+      padding: 2rem 1rem;
+      box-shadow: 2px 0 10px rgba(0,0,0,0.02);
+    }
+
+    .sidebar-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 2.5rem;
+      text-align: center;
+      color: #4a6b57;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .nav {
+      list-style: none;
+    }
+
+    .nav li {
+      margin: 0.6rem 0;
+    }
+
+    .nav a {
+      text-decoration: none;
+      color: #5a6f64;
+      padding: 0.75rem 1rem;
+      display: flex;
+      align-items: center;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+      font-size: 0.95rem;
+    }
+
+    .nav a i {
+      margin-right: 0.8rem;
+      font-size: 1rem;
+      color: #6a8d76;
+      width: 20px;
+      text-align: center;
+    }
+
+    .nav a:hover {
+      background-color: #f0f7f2;
+      color: #4a6b57;
+      transform: translateX(3px);
+    }
+
+    .main-content {
+      flex: 1;
+      padding: 2.5rem;
+      background-color: #f8f9fa;
+    }
+
+    .main-header h1 {
+      font-size: 1.8rem;
+      color: #4a6b57;
+      margin-bottom: 1.5rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .dashboard-content {
+      background-color: #ffffff;
+      border-radius: 12px;
+      padding: 2rem;
+      box-shadow: 0 2px 15px rgba(0, 0, 0, 0.03);
+      border: 1px solid #e0e6e2;
+      line-height: 1.7;
+      color: #4a5750;
+    }
+
+    .dashboard-content p {
+      max-width: 700px;
+      font-size: 1.05rem;
+    }
+
+    .main-footer {
+      margin-top: 3rem;
+      text-align: center;
+      font-size: 0.85rem;
+      color: #8a9b8f;
+      padding-top: 1rem;
+    }
+
+    @media (max-width: 768px) {
+      .layout {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        width: 100%;
+        padding: 1rem;
+        border-right: none;
+        border-bottom: 1px solid #e0e6e2;
+      }
+
+      .sidebar-title {
+        margin-bottom: 1rem;
+        justify-content: flex-start;
+      }
+
+      .nav {
+        display: flex;
+        overflow-x: auto;
+        padding-bottom: 0.5rem;
+        gap: 0.5rem;
+      }
+
+      .nav li {
+        margin: 0;
+      }
+
+      .nav a {
+        padding: 0.5rem 0.8rem;
+        white-space: nowrap;
+      }
+
+      .nav a:hover {
+        transform: none;
+      }
+
+      .main-content {
+        padding: 1.5rem;
+      }
+
+      .main-header h1 {
+        font-size: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <h2 class="sidebar-title"><i class="fas fa-leaf"></i> FarmAI</h2>
+      <ul class="nav">
+        <li><a href="/pages/hello"><i class="fas fa-home"></i> Home</a></li>
+        <li><a href="/pages/upload"><i class="fas fa-cloud-upload-alt"></i> Upload</a></li>
+        <li><a href="/pages/to_chunks"><i class="fas fa-cut"></i> Chunk It</a></li>
+        <li><a href="/pages/chunks_to_embedding"><i class="fas fa-project-diagram"></i> Embed</a></li>
+        <li><a href="/pages/llms_config"><i class="fas fa-cog"></i> Settings</a></li>
+        <li><a href="/pages/chat"><i class="fas fa-comment-dots"></i> Chat</a></li>
+        <li><a href="/pages/rag"><i class="fas fa-link"></i> RAG</a></li>
+        <li><a href="/pages/monitoring"><i class="fas fa-server"></i> System Pulse</a></li>
+
+      </ul>
+    </aside>
+
+    <main class="main-content">
+      <header class="main-header">
+        <h1><i class="fas fa-seedling"></i> Welcome to FarmAI</h1>
+      </header>
+      <section class="dashboard-content" id="content">
+        <p>Your agricultural intelligence hub. Navigate through the sidebar to manage your farm data, process documents, and interact with your AI assistant for valuable insights about your crops and operations.</p>
+      </section>
+      <footer class="main-footer">
+        <p>Nasser Melhem – ©2025</p>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

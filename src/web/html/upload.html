@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Upload File</title>
+    <style>
+
+    body {
+        font-family: 'Arial', sans-serif;
+        background-color: #e8f5e9; /* Soft green background */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+    }
+
+    .upload-container {
+        text-align: center;
+        background: #ffffff;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        width: 80%;
+        max-width: 500px;
+    }
+
+    h1 {
+        color: #2e7d32; /* Nature-inspired green */
+        font-size: 24px;
+    }
+
+    input[type="file"] {
+        margin: 15px 0;
+        font-size: 16px;
+        padding: 10px;
+        border: 1px solid #81c784;
+        border-radius: 6px;
+        width: 100%;
+    }
+
+    button {
+        padding: 10px 20px;
+        font-size: 16px;
+        background-color: #66bb6a; /* Fresh green button */
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+
+    button:hover {
+        background-color: #388e3c; /* Darker green when hovered */
+    }
+
+    .result-box {
+        margin-top: 20px;
+        padding: 15px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        background-color: #f9f9f9;
+        font-size: 16px;
+    }
+
+    .emoji {
+        font-size: 24px;
+    }
+    
+    /* Green color for success messages */
+    .success {
+        color: #388e3c;
+    }
+
+    /* Red color for error messages */
+    .error {
+        color: #d32f2f;
+    }
+
+    </style>
+</head>
+<body>
+    <div class="upload-container">
+        <h1>🌱 Upload Your Agricultural Document 📄</h1>
+        <form id="uploadForm">
+            <input type="file" id="fileInput" name="file" required>
+            <button type="submit">Upload 🌿</button>
+        </form>
+        <div id="uploadResult" class="result-box"></div>
+    </div>
+    
+    <script>
+        let authToken = null;
+        
+        // Restore the token from localStorage or sessionStorage on page load
+        document.addEventListener("DOMContentLoaded", () => {
+            authToken = localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
+            console.log("Restored token:", authToken); // for debugging
+        });
+        
+        document.getElementById("uploadForm").addEventListener("submit", async function (e) {
+            e.preventDefault();
+        
+            const resultBox = document.getElementById("uploadResult");
+            const fileInput = document.getElementById("fileInput");
+        
+            if (!fileInput.files.length) {
+                resultBox.innerHTML = "🍅 Please select a file to upload.";
+                return;
+            }
+        
+            const formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+        
+            resultBox.innerHTML = "🍃 Uploading... Please wait!";
+        
+            try {
+                const headers = {};
+                if (authToken) {
+                    headers["Authorization"] = `Bearer ${authToken}`;
+                }
+        
+                const response = await fetch("/api/upload/", {
+                    method: "POST",
+                    body: formData,
+                    headers: headers,
+                });
+        
+                const data = await response.json();
+        
+                if (response.ok) {
+                    resultBox.innerHTML = `
+                        🍀 <span class="success">Upload successful!</span><br>
+                        <strong>Filename:</strong> ${data.filename}<br>
+                        <strong>Saved To:</strong> ${data.saved_to}<br>
+                        🌽 Your file is ready for processing!
+                    `;
+                } else {
+                    resultBox.innerHTML = `❌ <span class="error">Upload failed: ${data.detail || "Unknown error."}</span>`;
+                }
+            } catch (error) {
+                resultBox.innerHTML = "❌ Upload failed due to an error.";
+                console.error("Upload error:", error);
+            }
+        });
+    </script>
+</body>
+</html>

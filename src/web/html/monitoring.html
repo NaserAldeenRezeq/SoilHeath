@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>System Monitor</title>
+  <style>
+      body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        background-color: #f8fbf8;
+        color: #3a4a3a;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2rem;
+        padding: 2rem;
+        min-height: 100vh;
+      }
+
+    /* System Monitor Styles */
+    .monitor-container {
+      display: flex;
+      gap: 2rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: 800px;
+    }
+
+    .monitor {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .progress-ring {
+      position: relative;
+      width: 100px;
+      height: 100px;
+    }
+
+    .progress-ring__circle {
+      stroke: #e0e8e0;
+      stroke-width: 8;
+      fill: transparent;
+      stroke-dasharray: 282.743;
+      stroke-dashoffset: 282.743;
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+      transition: stroke-dashoffset 0.35s ease-out;
+    }
+
+    .usage-text {
+      margin-top: 0.5rem;
+      font-size: 1rem;
+      font-weight: 500;
+      color: #5a8f6a;
+    }
+
+    /* Specific Ring Colors */
+    #cpu-ring {
+      stroke: #8bc34a;  /* Leaf green for CPU */
+    }
+
+    #memory-ring {
+      stroke: #4caf50;  /* Forest green for Memory */
+    }
+
+    #disk-ring {
+      stroke: #2196f3;  /* Sky blue for Disk */
+    }
+
+    #gpu-ring {
+      stroke: #9c27b0;  /* Purple for GPU (kept for visibility) */
+    }
+
+    /* Application Logs Styles */
+    .log-container {
+      width: 90%;
+      max-width: 900px;
+      background-color: white;
+      border: 1px solid #e0e8e0;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(82, 116, 56, 0.05);
+      padding: 1.5rem;
+      margin-top: 1rem;
+    }
+
+    h1, h2 {
+      color: #5a8f6a;
+      font-weight: 500;
+    }
+
+    pre {
+      background-color: #f8fbf8;
+      padding: 1rem;
+      border-radius: 6px;
+      overflow-y: auto;
+      max-height: 400px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      border: 1px solid #e0e8e0;
+      font-family: 'Menlo', 'Consolas', monospace;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .last-updated {
+      text-align: right;
+      font-size: 0.8rem;
+      color: #8d9e8d;
+      margin-top: 0.5rem;
+    }
+
+    /* Log level colors */
+    .info-log {
+      color: #4caf50; /* Green for info */
+    }
+
+    .debug-log {
+      color: #ff9800; /* Amber for debug */
+    }
+
+    .error-log {
+      color: #f44336; /* Red for error */
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- System Resource Monitor Section -->
+  <h1>System Resources</h1>
+  <div class="monitor-container">
+    <div class="monitor">
+      <svg class="progress-ring">
+        <circle id="cpu-ring" class="progress-ring__circle" cx="50" cy="50" r="45"/>
+      </svg>
+      <h3>CPU</h3>
+      <div id="cpu" class="usage-text">0%</div>
+    </div>
+
+    <div class="monitor">
+      <svg class="progress-ring">
+        <circle id="memory-ring" class="progress-ring__circle" cx="50" cy="50" r="45"/>
+      </svg>
+      <h3>Memory</h3>
+      <div id="memory" class="usage-text">0%</div>
+    </div>
+
+    <div class="monitor">
+      <svg class="progress-ring">
+        <circle id="disk-ring" class="progress-ring__circle" cx="50" cy="50" r="45"/>
+      </svg>
+      <h3>Disk</h3>
+      <div id="disk" class="usage-text">0%</div>
+    </div>
+
+    <div class="monitor">
+      <svg class="progress-ring">
+        <circle id="gpu-ring" class="progress-ring__circle" cx="50" cy="50" r="45"/>
+      </svg>
+      <h3>GPU</h3>
+      <div id="gpu" class="usage-text">0%</div>
+    </div>
+  </div>
+
+  <!-- Application Logs Section -->
+  <div class="log-container">
+    <h2>Application Logs</h2>
+    <pre id="log-output">Loading logs...</pre>
+    <div class="last-updated" id="last-updated">Last updated: --</div>
+  </div>
+
+  <script>
+    // Function to fetch system usage and update the rings
+    const maxStrokeValue = 282.743; // For a circle with r=45
+
+    function updateRing(elementId, value) {
+      const ring = document.getElementById(`${elementId}-ring`);
+      const textEl = document.getElementById(elementId);
+
+      if (ring) {
+        ring.style.strokeDashoffset = maxStrokeValue - (maxStrokeValue * value / 100);
+      }
+
+      if (textEl) {
+        textEl.textContent = `${value}%`;
+        // Update color based on usage
+        if (value > 80) {
+          textEl.style.color = '#f44336'; // red for high
+        } else if (value < 20) {
+          textEl.style.color = '#4caf50'; // green for low
+        } else {
+          textEl.style.color = '#ff9800'; // amber for normal
+        }
+      }
+    }
+
+    async function fetchUsage(endpoint, elementId) {
+      try {
+        const res = await fetch(`/api/health/${endpoint}`);
+        const data = await res.json();
+
+        let value = typeof data === 'number' ? data
+                   : data[`${endpoint}_usage`] ?? data.gpu_usage ?? 0;
+
+        updateRing(elementId, value);
+      } catch (err) {
+        console.error(`Error fetching ${endpoint}:`, err);
+        const el = document.getElementById(elementId);
+        if (el) el.textContent = 'N/A';
+      }
+    }
+
+    function updateAll() {
+      fetchUsage('cpu', 'cpu');
+      fetchUsage('memory', 'memory');
+      fetchUsage('disk', 'disk');
+      fetchUsage('gpu', 'gpu');
+    }
+
+    updateAll();
+    setInterval(updateAll, 3000);
+
+    // Function to fetch and display logs
+    async function fetchLogs() {
+      try {
+        const response = await fetch("/api/logs");
+        const logs = await response.text();
+        document.getElementById("log-output").innerHTML = processLogs(logs);
+        document.getElementById("last-updated").textContent =
+          "Last updated: " + new Date().toLocaleTimeString();
+      } catch (error) {
+        document.getElementById("log-output").textContent = "Failed to fetch logs.";
+        console.error("Error fetching logs:", error);
+      }
+    }
+
+    function processLogs(logs) {
+      const logLines = logs.split('\n');
+      return logLines
+        .map(line => {
+          if (line.includes("INFO")) {
+            return `<div class="info-log">${line}</div>`;
+          } else if (line.includes("DEBUG")) {
+            return `<div class="debug-log">${line}</div>`;
+          } else if (line.includes("ERROR")) {
+            return `<div class="error-log">${line}</div>`;
+          }
+          return `<div>${line}</div>`;
+        })
+        .join('');
+    }
+
+    fetchLogs();
+    setInterval(fetchLogs, 60000);
+  </script>
+</body>
+</html>
