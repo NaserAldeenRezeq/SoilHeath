@@ -123,7 +123,7 @@ soil-health-ai/
 
 ```bash
 # Clone the repository
-git clone https://github.com/AlRashid-AlKiswane/Naseer.git
+git clone 
 cd Naseer
 
 # Create virtual environment
