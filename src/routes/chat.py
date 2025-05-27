@@ -1,35 +1,43 @@
+"""
+docstring
+"""
+
 import os
 import sys
+from typing import Union
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from starlette.status import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_500_INTERNAL_SERVER_ERROR
 
 try:
-    MAIN_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../"))
+    MAIN_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
     sys.path.append(MAIN_DIR)
 
-    from logs import log_error, log_info, log_debug, log_warning
-    from dbs import add_query_response, fetch_all_rows
-    from prompt import FarmAssistantPromptBuilder
-    from schemes import ChatRoute
-    from llm import HuggingFaceLLM
-    from db_vector import StartQdrant
-    from embedding import EmbeddingService
+    from src.logs import log_error, log_info, log_debug, log_warning
+    from src.dbs import add_query_response, fetch_all_rows
+    from src.prompt import FarmAssistantPromptBuilder
+    from src.schemes import ChatRoute
+    from src.llm import HuggingFaceLLM, GoogleLLM
+    from src.db_vector import StartQdrant
+    from src.embedding import EmbeddingService
+    from src.helpers import split_soil_elements
 
-except Exception as e:
+except ValueError as e:  # Replace with a specific exception type, e.g., ValueError
     msg = f"Import Error in: {__file__}, Error: {e}"
-    raise ImportError(msg)
+    raise ImportError(msg) from e
 
 chat_route = APIRouter()
 
-def get_llm(request: Request) -> HuggingFaceLLM:
+def get_llm(request: Request) -> Union[HuggingFaceLLM, GoogleLLM]:
     """Retrieve the LLM instance from the app state."""
     llm = request.app.state.llm
     if not llm:
         log_warning("LLM instance not found in application state.")
         raise HTTPException(
             status_code=HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="LLM service is not initialized. Please configure the LLM via the /llmsSettings endpoint."
+            detail="""LLM service is not initialized. Please configure 
+                      the LLM via the /llmsSettings endpoint."""
         )
     return llm
 
@@ -57,7 +65,7 @@ def get_db_conn(request: Request):
 
 def get_embedding_model(request: Request) -> EmbeddingService:
     """Retrieve the embedding model instance from the app state."""
-    embedding = request.pp.state.embedded
+    embedding = request.app.state.embedded  # Fixed typo: was request.pp.state.embedded
     if not embedding:
         log_warning("Embedding model instance not found in application state.")
         raise HTTPException(
@@ -75,7 +83,6 @@ def format_retrieved_context(retrieved_docs: list[dict]) -> str:
 
 @chat_route.post("/chat", response_class=JSONResponse)
 async def chat(
-    request: Request,
     use_id: str,
     body: ChatRoute,
     top_k: int = 3,
@@ -87,8 +94,8 @@ async def chat(
 ) -> JSONResponse:
     """
     Chat endpoint that:
-    1. Checks for cached response
-    2. Embeds the user query
+    1. Parses input elements
+    2. Embeds user query
     3. Retrieves relevant context from vector DB
     4. Generates a response using the LLM
     5. Stores the interaction in the database
@@ -97,7 +104,6 @@ async def chat(
         top_k: Number of relevant chunks to retrieve (default: 3)
         score_threshold: Minimum similarity score for retrieved chunks (default: 0.7)
     """
-    # Validate input
     query = body.query.strip()
     if not query:
         log_warning("Empty query received")
@@ -105,99 +111,78 @@ async def chat(
             status_code=HTTP_400_BAD_REQUEST,
             detail="Query cannot be empty"
         )
-
-    # Check cache first
+    log_error(query)
     try:
-        cached = fetch_all_rows(
-            conn=conn,
-            table_name="query_response",
-            columns=["response"],
-            where_clause=f"user_id = '{use_id}' AND query = '{query}'",
-            limit=1
-        )
-        if cached:
-            log_info(f"[CACHE HIT] Found cached response for user {use_id}")
-            return JSONResponse(
-                status_code=HTTP_200_OK,
-                content={
-                    "status": "success",
-                    "response": cached[0]["response"],
-                    "cached": True
-                }
-            )
-    except Exception as e:
-        log_error(f"Cache check failed: {str(e)}")
-        # Continue with normal processing if cache check fails
+        soil, weather = split_soil_elements(query)
 
-    try:
-        log_debug(f"Processing query from user {use_id}: {query}")
-        
-        # Step 1: Embed the query
-        query_embedding = embedding.embed(text=query)
-        
-        # Step 2: Retrieve relevant context
-        retrieved_docs = qdrant.search_embeddings(
-            collection_name="embeddings",
-            query_embedding=query_embedding,
-            top_k=top_k,
-            score_threshold=score_threshold
-        )
-        
-        if not retrieved_docs:
-            log_warning("No relevant documents found for query")
-            raise HTTPException(
-                status_code=HTTP_400_BAD_REQUEST,
-                detail="No relevant information found to answer your query"
-            )
-        
-        # Format the context for the prompt
-        context = format_retrieved_context(retrieved_docs)
-        log_debug(f"Retrieved context:\n{context}...")
+        log_error(f"Parsed elements: {soil}")
 
-        # Step 3: Build prompt and get LLM response
-        try:
-            prompt = FarmAssistantPromptBuilder().build_prompt(
-                context=context,
-                user_message=query
-            )
-            response = llm.response(prompt=prompt)
-            log_debug(f"Generated response: {response[:200]}...")
-        except Exception as e:
-            log_error(f"Response generation failed: {str(e)}")
-            raise HTTPException(
-                status_code=HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to generate response"
-            )
+        log_debug(f"Parsed input for user_id={use_id}: SoilData={soil}, WeatherData={weather}")
 
-        # Step 4: Store interaction
+        recommendations = []
+
+        for parameter, value in soil.items():
+            individual_query = f"{parameter}: {value}"
+            log_debug(f"Processing {parameter} with value {value} for user {use_id}")
+
+            query_embedding = embedding.embed(text=individual_query)
+
+            retrieved_docs = qdrant.search_embeddings(
+                collection_name="embeddings",
+                query_embedding=query_embedding,
+                top_k=top_k,
+                score_threshold=score_threshold
+            )
+            status = "null"
+            if not retrieved_docs:
+                log_warning(f"No relevant documents found for {parameter}")
+
+                context = format_retrieved_context(retrieved_docs)
+                try:
+                    prompt = FarmAssistantPromptBuilder().build_prompt(
+                        context=context,
+                        user_message=individual_query,
+                        weather=weather
+                    )
+                    advice = llm.response(prompt=prompt).strip()
+                    status = "Processed"
+                    log_debug(f"Response for {parameter}: {advice[:100]}...")
+                except RuntimeError as e:
+                    log_error(f"Failed to generate response for {parameter}: {str(e)}")
+                    advice = "Error generating advice."
+                    status = "Error"
+
+            recommendations.append({
+                "parameter": parameter,
+                "value": value,
+                "status": status,
+                "advice": advice
+            })
+
         try:
             add_query_response(
                 conn=conn,
                 query=query,
-                response=response,
+                response=str(recommendations),
                 user_id=use_id
             )
-            log_info(f"Stored interaction for user {use_id}")
-        except Exception as e:
+            log_info(f"Stored full interaction for user {use_id}")
+        except RuntimeError as e:
             log_error(f"Failed to store interaction: {str(e)}")
-            # Continue even if storage fails
 
         return JSONResponse(
             status_code=HTTP_200_OK,
             content={
                 "status": "success",
-                "response": response,
                 "user_id": use_id,
-                "retrieved_docs": len(retrieved_docs),
+                "recommendations": recommendations,
                 "cached": False
             }
         )
-
-    except HTTPException:
-        raise
     except Exception as e:
-        log_error(f"Unexpected error: {str(e)}", exc_info=True)
+        log_error(f"Unexpected error in chat endpoint: {str(e)}")
         raise HTTPException(
             status_code=HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An unexpected error occurred"
-        )
+            detail="An unexpected error occurred while processing your request"
+        ) from e
+

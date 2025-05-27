@@ -1,2 +1,2 @@
 from .setting import Settings, get_settings
-# from .dependencies import get_dependencies
+from .spliters import split_soil_elements

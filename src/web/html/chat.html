@@ -111,7 +111,6 @@
       background-color: #487a56;
     }
 
-    /* Typing indicator styles */
     .typing {
       display: flex;
       align-items: center;
@@ -129,17 +128,9 @@
       animation: typing 1.4s infinite;
     }
 
-    .typing .dot:nth-child(1) {
-      animation-delay: 0s;
-    }
-
-    .typing .dot:nth-child(2) {
-      animation-delay: 0.2s;
-    }
-
-    .typing .dot:nth-child(3) {
-      animation-delay: 0.4s;
-    }
+    .typing .dot:nth-child(1) { animation-delay: 0s; }
+    .typing .dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing .dot:nth-child(3) { animation-delay: 0.4s; }
 
     @keyframes typing {
       0%, 100% {
@@ -166,7 +157,28 @@
   <script>
     const chatWindow = document.getElementById('chat-window');
     const chatInput = document.getElementById('chat-input');
-    const userId = "test-user-123"; // Placeholder, replace with dynamic ID later
+    const userId = "test-user-123"; // Replace with dynamic ID later
+
+    function appendMessage(text, sender) {
+      const message = document.createElement('div');
+      message.classList.add('message', sender);
+      message.innerText = text;
+      chatWindow.appendChild(message);
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    function appendTypingIndicator() {
+      const typingIndicator = document.createElement('div');
+      typingIndicator.classList.add('typing');
+      typingIndicator.innerHTML = `
+        <span class="dot"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+      `;
+      chatWindow.appendChild(typingIndicator);
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+      return typingIndicator;
+    }
 
     async function sendMessage() {
       const text = chatInput.value.trim();
@@ -188,7 +200,7 @@
           headers['Authorization'] = `Bearer ${authToken}`;
         }
 
-        const response = await fetch(`/api/chat?user_id=${userId}`, {
+        const response = await fetch(`/api/chat?use_id=${userId}`, {
           method: 'POST',
           headers: headers,
           body: JSON.stringify({ query: text })
@@ -197,43 +209,22 @@
         const data = await response.json();
         loadingIndicator.remove();
 
-        if (response.ok && data.response) {
-          appendMessage(data.response, 'bot');
+        if (response.ok && data.recommendations) {
+          const fullReply = data.recommendations.map(item =>
+            `🌿 ${item.parameter} (${item.status}): ${item.advice}`
+          ).join('\n\n');
+          appendMessage(fullReply, 'bot');
         } else {
           appendMessage("Sorry, something went wrong 🌧️", 'bot');
         }
       } catch (err) {
         loadingIndicator.remove();
-        appendMessage("🌐 Server error — try again later.", 'bot');
+        appendMessage("Network error. Please try again 🛠️", 'bot');
       }
     }
 
-    function appendMessage(text, sender) {
-      const msg = document.createElement('div');
-      msg.classList.add('message', sender);
-      msg.textContent = text;
-      chatWindow.appendChild(msg);
-      chatWindow.scrollTop = chatWindow.scrollHeight;
-    }
-
-    function appendTypingIndicator() {
-      const msg = document.createElement('div');
-      msg.classList.add('message', 'bot', 'typing');
-
-      for (let i = 0; i < 3; i++) {
-        const dot = document.createElement('span');
-        dot.classList.add('dot');
-        msg.appendChild(dot);
-      }
-
-      chatWindow.appendChild(msg);
-      chatWindow.scrollTop = chatWindow.scrollHeight;
-      return msg;
-    }
-
-    chatInput.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
+    chatInput.addEventListener("keypress", function (e) {
+      if (e.key === "Enter") {
         sendMessage();
       }
     });

@@ -42,6 +42,8 @@ class Settings(BaseSettings):
     # Secrets
     SECRET_KEY: str
 
+    GOOGLE_API_KEY: str
+
     @field_validator("FILE_ALLOWED_TYPES", mode="before")
     @classmethod
     def parse_list(cls, v):

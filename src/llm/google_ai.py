@@ -2,175 +2,195 @@
 google_llm.py
 
 This module defines the `GoogleLLM` class, which provides an interface
-for interacting with the Google Generative AI API. It extends a base LLM interface 
-to support initialization, configuration, and text generation.
-
-Classes:
-    GoogleLLM: A wrapper class that initializes and interacts with the 
-    Google Generative AI API to generate text.
-
-Raises:
-    RuntimeError or ValueError with descriptive error messages for 
-    configuration or generation failures.
+for interacting with the Google Generative AI API while implementing
+the ILLMsGenerators abstract base class.
 """
 
 import os
 import sys
 import logging
-from typing import Optional
+from typing import Optional, Any
+import google.generativeai as genai
+from google.api_core import exceptions # Import exceptions for API errors
 
+# --- Setup for project-specific imports ---
+# This block attempts to dynamically add the project root to sys.path
+# It's crucial for `src.logs`, `src.helpers`, and `.abc_llm` to be found.
 try:
-    import google.generativeai as genai
-
     CURRENT_DIR = os.path.dirname(__file__)
-    MAIN_DIR = os.path.abspath(os.path.join(CURRENT_DIR, "../"))
+    # Attempt to find the main project directory by going up one or two levels
+    MAIN_DIR_CANDIDATES = [
+        os.path.abspath(os.path.join(CURRENT_DIR, "../")),
+        os.path.abspath(os.path.join(CURRENT_DIR, "../../"))
+    ]
+    MAIN_DIR = None
+    for candidate in MAIN_DIR_CANDIDATES:
+        if os.path.exists(candidate):
+            MAIN_DIR = candidate
+            break
 
-    if not os.path.exists(MAIN_DIR):
-        MAIN_DIR = os.path.abspath(os.path.join(CURRENT_DIR, "../../"))
-        if not os.path.exists(MAIN_DIR):
-            raise FileNotFoundError(
-                f"Project directory not found. Attempted: {os.path.join(CURRENT_DIR, '../')} "
-                f"and {os.path.join(CURRENT_DIR, '../../')}"
-            )
+    if MAIN_DIR is None:
+        raise FileNotFoundError(
+            f"Project directory not found. Attempted: {MAIN_DIR_CANDIDATES}"
+        )
 
     if MAIN_DIR not in sys.path:
         sys.path.append(MAIN_DIR)
 
+    # Import project-specific modules
+    # Ensure these modules (logs, helpers, abc_llm) exist and are correctly structured
     from src.logs import log_error, log_info
     from src.helpers import get_settings, Settings
-    from src.enums import GoogleLLMLog
-    from .abc_llm import ILLMsGenerators
+    from .abc_llm import ILLMsGenerators # Relative import for abc_llm
 
-except ModuleNotFoundError as e:
-    logging.error("Module not found: %s", e, exc_info=True)
+except ImportError as ie:
+    # Catch specific ImportError for better debugging of missing modules
+    logging.critical("Module import error in google_llm.py: %s", ie, exc_info=True)
     raise
-except ImportError as e:
-    logging.error("Import error: %s", e, exc_info=True)
-    raise
-except FileNotFoundError as e:
-    logging.error("Project directory not found: %s", e, exc_info=True)
-    raise
-except (RuntimeError, ValueError) as e:
-    logging.critical("Unexpected setup error in google_llm.py: %s", e, exc_info=True)
+except Exception as e:
+    # Catch any other unexpected errors during initialization
+    logging.critical("Initialization error in google_llm.py: %s", e, exc_info=True)
     raise
 
 
 class GoogleLLM(ILLMsGenerators):
     """
-    A class that integrates a Google Generative AI model with a customizable interface.
-
-    Attributes:
-        app_settings (Settings): Application-wide configuration including API keys.
-        model (genai.GenerativeModel): Google AI GenerativeModel instance.
-        model_name (str): Name of the model used for generation.
-        generation_config (genai.types.GenerationConfig): Configuration for generation parameters.
+    Implementation of ILLMsGenerators for Google's Generative AI models.
     """
 
-    def __init__(self):
-        """Initializes the GoogleLLM instance by loading application settings."""
-        try:
-            self.app_settings: Settings = get_settings()
-            self.model: Optional[genai.GenerativeModel] = None
-            self.model_name: str = ""
-            self.generation_config: Optional[genai.types.GenerationConfig] = None
-        except Exception as e:
-            log_error(GoogleLLMLog.INIT_SETTINGS_FAIL.value + f": {e}")
-            raise RuntimeError(GoogleLLMLog.INIT_FAILED.value) from e
-
-    # pylint: disable= too-many-arguments
-    # pylint: disable= arguments-differ
-    # pylint: disable= too-many-positional-arguments
-    def initialize_llm(
+    def __init__(
         self,
         model_name: str = "gemini-1.0-pro",
         max_new_tokens: int = 1024,
-        temperature: Optional[float] = 0.7,
-        top_p: Optional[float] = None,
-        top_k: Optional[int] = None
-    ):
+        do_sample: bool = True, # Kept for interface compatibility
+        temperature: float = 0.5,
+        top_p: float = 0.95,
+        top_k: int = 50,
+        trust_remote_code: bool = False, # Kept for interface compatibility
+        quantization: bool = False, # Kept for interface compatibility
+        quantization_type: str = "8bit", # Kept for interface compatibility
+        **kwargs: Any # Use Any for kwargs for better type hinting
+    ) -> None:
         """
-        Configures the Google AI client and sets generation parameters.
+        Initialize GoogleLLM with generation parameters.
 
-        Args:
-            model_name (str): The model identifier. Default is "gemini-1.0-pro".
-            max_new_tokens (int): Max tokens to generate. Default is 1024.
-            temperature (float, optional): Sampling temperature. Default is 0.7.
-            top_p (float, optional): Nucleus sampling parameter.
-            top_k (int, optional): Top-k sampling parameter.
+        Note: Some parameters like trust_remote_code, quantization are kept for interface
+        compatibility but aren't used with Google's API.
+        """
+        self.app_settings: Settings = get_settings() # Explicitly type app_settings
+        self.model_name = "gemini-1.5-flash"
+        self.max_new_tokens = max_new_tokens
+        self.temperature = temperature
+        self.top_p = top_p
+        self.top_k = top_k
+        self.model: Optional[genai.GenerativeModel] = None # Type hint for model
+        self.generation_config: Optional[genai.types.GenerationConfig] = None # Type hint
 
-        Raises:
-            ValueError: If the API key is missing or invalid.
-            RuntimeError: If initialization fails for other reasons.
+        # Log unused parameters for transparency and potential user awareness
+        if not do_sample:
+            log_info("Note: 'do_sample=False' is not directly configurable for sampling in Google Generative AI models via this API.")
+        if trust_remote_code:
+            log_info("Note: 'trust_remote_code' is not applicable to Google Generative AI API usage.")
+        if quantization:
+            log_info(f"Note: 'quantization' ({quantization_type}) is not directly configurable via this Google Generative AI API.")
+
+        # Store any additional kwargs, though not directly used here, for potential future extensions
+        self.additional_kwargs = kwargs
+
+    def initialize_llm(self) -> None:
+        """
+        Configure the Google AI client and set generation parameters.
+        This method should be called before attempting to generate responses.
         """
         try:
             api_key = self.app_settings.GOOGLE_API_KEY
             if not api_key:
-                raise ValueError(GoogleLLMLog.MISSING_API_KEY.value)
+                # Use a more specific exception for configuration errors
+                raise ValueError("Google API key is missing in settings. Please ensure GOOGLE_API_KEY is set.")
 
+            # Configure the genai library with the API key
             genai.configure(api_key=api_key)
-            self.model = genai.GenerativeModel(model_name)
-            self.model_name = model_name
-
-            config_params = {
-                "max_output_tokens": max_new_tokens
-            }
-            if temperature is not None:
-                config_params["temperature"] = temperature
-            if top_p is not None:
-                config_params["top_p"] = top_p
-            if top_k is not None:
-                config_params["top_k"] = top_k
-
-            self.generation_config = genai.types.GenerationConfig(**config_params)
-
-            log_info(GoogleLLMLog.INITIALIZED_SUCCESSFULLY.value)
-            log_info(
-                f"Config: model={model_name}, temp={temperature}, "
-                f"top_p={top_p}, top_k={top_k}, tokens={max_new_tokens}"
+            
+            # Create the GenerationConfig instance
+            self.generation_config = genai.types.GenerationConfig(
+                max_output_tokens=self.max_new_tokens,
+                temperature=self.temperature,
+                top_p=self.top_p,
+                top_k=self.top_k
             )
-        except ValueError as ve:
-            log_error(GoogleLLMLog.VALUE_ERROR_INIT.value + f": {ve}")
-            raise
-        except Exception as e:
-            log_error(GoogleLLMLog.INIT_FAILED.value + f": {e}")
-            raise RuntimeError(GoogleLLMLog.INIT_FAILED.value) from e
+            
+            # Initialize the GenerativeModel with the correctly formatted model name
+            self.model = genai.GenerativeModel(self.model_name)
+            
+            log_info(f"GoogleLLM initialized successfully with model: '{self.model_name}'")
+            log_info(f"Generation config applied: {self.generation_config}")
 
-    def generate_response(self, prompt: str) -> str:
+        except ValueError as ve:
+            # Catch specific ValueError for missing API key
+            log_error(f"Configuration error during GoogleLLM initialization: {ve}")
+            raise RuntimeError(f"GoogleLLM initialization failed: {ve}") from ve
+        except Exception as e:
+            # Catch any other unexpected errors during initialization
+            log_error(f"An unexpected error occurred during GoogleLLM initialization: {e}")
+            raise RuntimeError(f"GoogleLLM initialization failed due to an unexpected error: {e}") from e
+
+    def response(self, prompt: str) -> str:
         """
-        Generates a text response using the configured Google AI model.
+        Generate a response from the Google model.
 
         Args:
-            prompt (str): The input prompt string.
+            prompt: Input text to generate response for
 
         Returns:
-            str: Generated text response.
+            Generated response text
 
         Raises:
-            RuntimeError: If generation fails or model is not initialized.
+            RuntimeError: If generation fails or model not initialized
+            ValueError: If the prompt is empty or invalid
         """
-        try:
-            if not self.model or not self.generation_config:
-                raise RuntimeError(GoogleLLMLog.MODEL_NOT_INITIALIZED.value)
+        # Ensure the model and config are initialized before attempting to generate
+        if self.model is None or self.generation_config is None:
+            log_error("GoogleLLM is not initialized. Call initialize_llm() first.")
+            raise RuntimeError("GoogleLLM not properly initialized. Call initialize_llm() before generating content.")
+        
+        if not prompt or not isinstance(prompt, str):
+            log_error("Invalid prompt provided. Prompt must be a non-empty string.")
+            raise ValueError("Prompt must be a non-empty string.")
 
-            log_info(GoogleLLMLog.GENERATION_STARTED.value)
+        try:
+            # Call the generate_content method with the prompt and generation config
+            # Using a list for the prompt is generally more robust for future multi-turn support
+            # and aligns with how chat models expect input.
             response = self.model.generate_content(
-                prompt, generation_config=self.generation_config
+                [prompt], # Wrap prompt in a list for consistency
+                generation_config=self.generation_config
             )
 
-            if response and hasattr(response, 'text'):
-                log_info(GoogleLLMLog.GENERATED_RESPONSE.value)
-                return response.text.strip()
-            elif response and hasattr(response, 'parts'):
-                result = "".join(part.text 
-                                 for part in response.parts 
-                                 if hasattr(part, 'text')).strip()
-                log_info(GoogleLLMLog.GENERATED_RESPONSE.value)
-                return result
+            # Check if candidates exist and if the first candidate has content
+            if response and response.candidates:
+                # Access the text from the first part of the first candidate
+                # This handles cases where content might be structured differently (e.g., with parts)
+                generated_text = ""
+                for part in response.candidates[0].content.parts:
+                    if hasattr(part, 'text'):
+                        generated_text += part.text
+                return generated_text.strip()
             else:
-                log_error(GoogleLLMLog.INVALID_RESPONSE.value + f" | Response: {response}")
-                raise RuntimeError(GoogleLLMLog.INVALID_RESPONSE.value)
+                # Handle cases where no candidates or no content is returned
+                log_error(f"Google API returned an empty or invalid response for prompt: {prompt[:100]}...")
+                raise RuntimeError("Google API returned an empty or invalid response. No content generated.")
+
+        except exceptions.GoogleAPICallError as api_err: # Changed from genai.types.APIError
+            # Specific handling for API errors (e.g., invalid key, rate limits, model not found)
+            log_error(f"Google API error during generation: {api_err}")
+            raise RuntimeError(f"Google API error during text generation: {api_err}") from api_err
         except Exception as e:
-            log_error(GoogleLLMLog.TEXT_GEN_FAILED.value + f": {e}")
-            if "API key not valid" in str(e):
-                raise RuntimeError(GoogleLLMLog.API_KEY_INVALID.value) from e
-            raise RuntimeError(GoogleLLMLog.RUNTIME_GEN_ERROR.value + f": {e}") from e
+            # Catch any other unexpected errors during generation
+            log_error(f"An unexpected error occurred during text generation for prompt: {prompt[:100]}... Error: {e}")
+            raise RuntimeError(f"Text generation failed due to an unexpected error: {e}") from e
+
+    def __call__(self, prompt: str) -> str:
+        """
+        Makes the GoogleLLM instance callable directly, acting as a shortcut for response().
+        """
+        return self.response(prompt)

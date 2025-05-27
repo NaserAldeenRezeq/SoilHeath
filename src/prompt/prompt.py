@@ -1,19 +1,48 @@
+"""
+wirte Docstring
+
+"""
+
 # -*- coding: utf-8 -*-
 class FarmAssistantPromptBuilder:
     @staticmethod
-    def build_prompt(soil_report: str, farmer_input: str) -> str:
+    def build_prompt(context: str, user_message: str = "", weather: str = "") -> str:
+        """
+        Builds a professional agricultural assistance prompt combining:
+        - Context about the farm situation
+        - Soil composition data
+        - Optional specific user questions
+        
+        Args:
+            context: Background information about the farm's condition and history
+            soil_data: Soil element measurements and observations
+            user_message: Specific questions or notes from the farmer
+            
+        Returns:
+            str: A well-structured prompt for agricultural recommendations
+        """
         return (
-            f"You are a smart and helpful farm assistant AI. "
-            f"Your job is to analyze the soil composition and suggest improvements. "
-            f"The farmer will provide breeding elements such as hydrogen, nitrogen, and carbon.\n"
-            f"{soil_report}\n\n"
-            f"Farmer Input: {farmer_input}\n"
-            f"Assistant Recommendation:"
-        )
+            "You are an expert agricultural AI assistant with deep knowledge in soil science, "
+            "crop nutrition, and sustainable farming practices. Analyze the following information "
+            "and provide a professional, actionable recommendation:\n\n"
 
-if __name__ == "__main__":
-    # Example usage
-    soil_report = "The soil has been showing poor crop yield for the last two seasons."
-    farmer_input = "Hydrogen: low, Nitrogen: medium, Carbon: high"
-    prompt = FarmAssistantPromptBuilder.build_prompt(soil_report, farmer_input)
-    print(prompt)
+            "**RAG Context**:\n"
+            f"{context}\n\n"
+
+            "**Soil Composition Analysis**:\n"
+            f"{user_message}"
+
+            "**Weather Status**:\n"
+            f"{weather}"
+
+            "Provide a detailed recommendation addressing:\n"
+            "1. Soil health assessment based on the element levels\n"
+            "2. Specific nutrient adjustments needed\n"
+            "3. Recommended amendments or fertilizers\n"
+            "4. Any crop-specific considerations\n"
+            "5. Long-term soil management suggestions\n\n"
+
+            "Structure your response with clear headings and prioritize "
+            "sustainable, cost-effective solutions:\n\n"
+            "**Professional Recommendation**:"
+        )
