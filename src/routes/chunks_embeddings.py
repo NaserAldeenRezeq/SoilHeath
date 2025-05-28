@@ -8,16 +8,17 @@ from src.logs.logger import log_warning
 
 # Setup import path and logging
 try:
-    MAIN_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../"))
+    MAIN_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
     if MAIN_DIR not in sys.path:
         sys.path.append(MAIN_DIR)
 
-    from dbs import fetch_all_rows
-    from logs import log_error, log_info
-    from embedding import EmbeddingService
-    from db_vector import StartQdrant
+    from src.dbs import fetch_all_rows
+    from src.logs import log_error, log_info
+    from src.embedding import EmbeddingService
+    from src.db_vector import StartQdrant
+
 except Exception as e:
-    raise ImportError(f"[IMPORT ERROR] {__file__}: {e}")
+    raise ImportError(f"[IMPORT ERROR] {__file__}: {e}") from e
 
 def get_db_conn(request: Request):
     """Retrieve the relational database connection from the app state."""
@@ -55,8 +56,7 @@ def get_embedding_model(request: Request) -> EmbeddingService:
 chunks_embedding_route = APIRouter()
 
 @chunks_embedding_route.post("/chunks_to_embedding", response_class=JSONResponse)
-async def chunks_to_embedding(request: Request,
-                              conn: sqlite3.Connection = Depends(get_db_conn),
+async def chunks_to_embedding(conn: sqlite3.Connection = Depends(get_db_conn),
                               qdrant: StartQdrant = Depends(get_qdrant_vector_db),
                               embed: EmbeddingService = Depends(get_embedding_model)):
     """

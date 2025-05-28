@@ -1,48 +1,51 @@
-"""
-wirte Docstring
-
-"""
-
 # -*- coding: utf-8 -*-
 class FarmAssistantPromptBuilder:
     @staticmethod
     def build_prompt(context: str, user_message: str = "", weather: str = "") -> str:
         """
-        Builds a professional agricultural assistance prompt combining:
-        - Context about the farm situation
-        - Soil composition data
-        - Optional specific user questions
+        Builds a straightforward agricultural prompt that delivers clear, actionable advice.
         
         Args:
-            context: Background information about the farm's condition and history
-            soil_data: Soil element measurements and observations
-            user_message: Specific questions or notes from the farmer
+            context: Farm background and current conditions
+            user_message: Farmer's specific questions or concerns
+            weather: Current weather data
             
         Returns:
-            str: A well-structured prompt for agricultural recommendations
+            str: A prompt designed for direct, practical farming advice
         """
         return (
-            "You are an expert agricultural AI assistant with deep knowledge in soil science, "
-            "crop nutrition, and sustainable farming practices. Analyze the following information "
-            "and provide a professional, actionable recommendation:\n\n"
-
-            "**RAG Context**:\n"
+            "You are a no-nonsense farming expert. Give clear, specific instructions "
+            "that a farmer can implement immediately. Use simple language and focus on "
+            "concrete actions. Answer in this exact structure:\n\n"
+            
+            "1. **Key Problem**: [Identify main issue in 1-2 sentences]\n"
+            "2. **Immediate Action**: [Give 3-5 specific steps to take NOW]\n"
+            "3. **Products Needed**: [List exact fertilizers/amendments with amounts]\n"
+            "4. **Timing**: [When to do each action]\n"
+            "5. **Expected Results**: [What should happen after implementation]\n\n"
+            
+            "**Current Situation**:\n"
             f"{context}\n\n"
-
-            "**Soil Composition Analysis**:\n"
-            f"{user_message}"
-
-            "**Weather Status**:\n"
-            f"{weather}"
-
-            "Provide a detailed recommendation addressing:\n"
-            "1. Soil health assessment based on the element levels\n"
-            "2. Specific nutrient adjustments needed\n"
-            "3. Recommended amendments or fertilizers\n"
-            "4. Any crop-specific considerations\n"
-            "5. Long-term soil management suggestions\n\n"
-
-            "Structure your response with clear headings and prioritize "
-            "sustainable, cost-effective solutions:\n\n"
-            "**Professional Recommendation**:"
+            
+            "**Farmer's Question**:\n"
+            f"{user_message}\n\n"
+            
+            "**Weather**:\n"
+            f"{weather}\n\n"
+            
+            "Answer with bullet points. Be specific:\n"
+            "- Instead of 'add nitrogen', say 'Apply 20kg of urea per acre'\n"
+            "- Instead of 'improve drainage', say 'Dig trenches 30cm deep around field'\n"
+            "- Recommend common brand names when helpful\n"
+            "- Give amounts in local units (acres, kg, etc.)\n\n"
+            
+            "Example format:\n"
+            "1. **Key Problem**: Soil is too acidic for corn\n"
+            "2. **Immediate Action**:\n"
+            "   - Apply 50kg lime per acre\n"
+            "   - Mix into top 15cm of soil\n"
+            "3. **Products Needed**:\n"
+            "   - Agricultural lime (2 bags per acre)\n"
+            "4. **Timing**: Do this 2 weeks before planting\n"
+            "5. **Expected Results**: pH will rise to 6.5 in 30 days"
         )

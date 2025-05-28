@@ -15,7 +15,7 @@ try:
     sys.path.append(MAIN_DIR)
 
     from src.logs import log_error, log_info, log_debug, log_warning
-    from src.dbs import add_query_response, fetch_all_rows
+    from src.dbs import add_query_response
     from src.prompt import FarmAssistantPromptBuilder
     from src.schemes import ChatRoute
     from src.llm import HuggingFaceLLM, GoogleLLM
@@ -67,7 +67,7 @@ def get_db_conn(request: Request):
 
 def get_embedding_model(request: Request) -> EmbeddingService:
     """Retrieve the embedding model instance from the app state."""
-    embedding = getattr(request.app.state, "embedding", None)
+    embedding = getattr(request.app.state, "embedded", None)
     if embedding is None:
         log_warning("Embedding model instance not found in application state.")
         raise HTTPException(
@@ -88,8 +88,6 @@ def format_retrieved_context(retrieved_docs: list[dict]) -> str:
 async def chat(
     user_id: str,
     body: ChatRoute,
-    top_k: int = 3,
-    score_threshold: float = 0.3,
     llm: Union[HuggingFaceLLM, GoogleLLM] = Depends(get_llm),
     conn = Depends(get_db_conn),
     qdrant: StartQdrant = Depends(get_qdrant_vector_db),
@@ -127,8 +125,8 @@ async def chat(
             retrieved = qdrant.search_embeddings(
                 collection_name="embeddings",
                 query_embedding=embedding_vector,
-                top_k=top_k,
-                score_threshold=score_threshold,
+                top_k=5,
+                score_threshold=0.3
             )
 
             if retrieved:

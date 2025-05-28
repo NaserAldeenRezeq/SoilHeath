@@ -149,7 +149,7 @@
     <div class="chat-header">🌱 Nature Health Chat</div>
     <div class="chat-window" id="chat-window"></div>
     <div class="chat-input-container">
-      <input type="text" id="chat-input" placeholder="Ask about nature and wellness..." />
+      <input type="text" id="chat-input" placeholder="Ask about soil or agriculture..." />
       <button onclick="sendMessage()">Send</button>
     </div>
   </div>
@@ -157,7 +157,7 @@
   <script>
     const chatWindow = document.getElementById('chat-window');
     const chatInput = document.getElementById('chat-input');
-    const userId = "test-user-123"; // Replace with dynamic ID later
+    const userId = "test-user-123"; // Replace with dynamic ID logic if needed
 
     function appendMessage(text, sender) {
       const message = document.createElement('div');
@@ -200,9 +200,9 @@
           headers['Authorization'] = `Bearer ${authToken}`;
         }
 
-        const response = await fetch(`/api/chat?use_id=${userId}`, {
+        const response = await fetch(`/api/chat?user_id=${userId}`, {
           method: 'POST',
-          headers: headers,
+          headers,
           body: JSON.stringify({ query: text })
         });
 
@@ -211,7 +211,7 @@
 
         if (response.ok && data.recommendations) {
           const fullReply = data.recommendations.map(item =>
-            `🌿 ${item.parameter} (${item.status}): ${item.advice}`
+            `🌿 *${item.parameter}* (${item.status}): ${item.advice}`
           ).join('\n\n');
           appendMessage(fullReply, 'bot');
         } else {
