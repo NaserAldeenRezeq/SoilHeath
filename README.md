@@ -7,7 +7,6 @@
 
 ## 🚀 Features at a Glance
 
-* ✅ **Secure Login** with JWT Authentication
 * 📂 **Upload PDFs & `.txt` Files**
 * ✂️ **Text Chunking** for Better Embedding
 * 🧠 **Generate Embeddings** Using Integrated Models
@@ -41,39 +40,6 @@ Frontend (HTML, CSS, JS via Jinja2 Templates)
 ---
 
 ## 🖼️ Dashboard Tour
-
-A visual walkthrough of each step in your soil health pipeline — from login to chat:
-
-| Home (Login)                                                                                       | Upload                                                                                               |
-| -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| ![Login](https://github.com/AlRashid-AlKiswane/Naseer/blob/main/assets/images/login.png) | ![Upload](https://github.com/AlRashid-AlKiswane/Naseer/blob/main/assets/images/upload.png) |
-
-| Chunking                                                                                                   | Embeddings                                                                                                        |
-| ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| ![Chunking](https://github.com/AlRashid-AlKiswane/Naseer/blob/main/assets/images/docChunker.png) | ![Embeddings](https://github.com/AlRashid-AlKiswane/Naseer/blob/main/assets/images/embeddingchunks.png) |
-
-| LLM Settings                                                                                                     | Chat                                                                                                 |
-| ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| ![LLM Settings](https://github.com/AlRashid-AlKiswane/Naseer/blob/main/assets/images/llmsSettings.png) | ![Chat](https://github.com/AlRashid-AlKiswane/Naseer/blob/main/assets/images/liveChat.png) |
-
-| Live RAG                                                                                                  | Monitoring                                                                                                         |
-| --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| ![Live RAG](https://github.com/AlRashid-AlKiswane/Naseer/blob/main/assets/images/live_rage.png) | ![Monitoring](https://github.com/AlRashid-AlKiswane/Naseer/blob/main/assets/images/monitroignsLoges.png) |
-
----
-
-## 🔍 FastAPI Interactive Docs
-
-View and test all your backend endpoints in real time:
-
-| API Docs                                                                                                       |
-| -------------------------------------------------------------------------------------------------------------- |
-| ![FastAPI 1](https://github.com/AlRashid-AlKiswane/Naseer/blob/main/assets/images/fastAPIDocs-1.png) |
-| ![FastAPI 2](https://github.com/AlRashid-AlKiswane/Naseer/blob/main/assets/images/fastAPIDocs-2.png) |
-| ![FastAPI 3](https://github.com/AlRashid-AlKiswane/Naseer/blob/main/assets/images/fastAPIDocs-3.png) |
-| ![FastAPI 4](https://github.com/AlRashid-AlKiswane/Naseer/blob/main/assets/images/fastAPIDocs-4.png) |
-
----
 
 ## 🧪 Tech Stack
 
@@ -160,9 +126,6 @@ Visit your browser:
 ## 🗃️ Image Assets Directory
 
 All UI screenshots are stored here:
-
-🔗 [assets/images/](https://github.com/AlRashid-AlKiswane/Naseer/tree/main/assets/images)
-
 | Filename               |
 | ---------------------- |
 | `docChunker.png`       |
