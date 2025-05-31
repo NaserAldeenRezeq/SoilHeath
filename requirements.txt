@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 accelerate==1.6.0
 aiofiles==24.1.0
 aiohappyeyeballs==2.6.1
@@ -144,3 +145,19 @@ urllib3==2.4.0
 uvicorn==0.34.2
 yarl==1.20.0
 zstandard==0.23.0
+=======
+uvicorn
+fastapi
+psutil
+torch
+pydantic_settings
+requests
+pandas
+langchain_community
+python-multipart
+sentence_transformers
+qdrant_client
+google-generativeai
+aiofiles
+pypdf
+>>>>>>> 872ac54 (Change code)
